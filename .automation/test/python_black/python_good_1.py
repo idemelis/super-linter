@@ -1,11 +1,11 @@
 import json
+import sys
 from os import getenv, path
 from pprint import pprint
-import sys
 
 import click  # pylint: disable=import-error
-from dotenv import load_dotenv  # pylint: disable=import-error
 import requests  # pylint: disable=import-error
+from dotenv import load_dotenv  # pylint: disable=import-error
 
 env = load_dotenv()
 api_url = getenv("API_URL", default="https://api.github.com/graphql")
@@ -24,6 +24,12 @@ headers = {
     "Accept": "application/vnd.github.bane-preview+json",
     "Content-Type": "application/json",
 }
+
+
+def make_request(query, query_variables):
+    payload = {"query": query, "variables": query_variables}
+    response = requests.post(api_url, data=json.dumps(payload), headers=headers)
+    return response
 
 
 def create_label(repo_id, label):
@@ -51,8 +57,7 @@ def create_label(repo_id, label):
     ) as query_file:
         query = "".join(query_file.readlines())
 
-    payload = {"query": query, "variables": query_variables}
-    response = requests.post(api_url, data=json.dumps(payload), headers=headers).json()
+    response = make_request(query, query_variables).json()
     print("Created label {label}".format(label=label["name"]))
 
     return response
@@ -78,8 +83,7 @@ def get_labels(owner, repo):
     ) as query_file:
         query = "".join(query_file.readlines())
 
-    payload = {"query": query, "variables": query_variables}
-    response = requests.post(api_url, data=json.dumps(payload), headers=headers)
+    response = make_request(query, query_variables)
 
     status_code = response.status_code
     result = response.json()
